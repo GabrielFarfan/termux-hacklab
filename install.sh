@@ -1,5 +1,4 @@
 #!/data/data/com.termux/files/usr/bin/bash
-
 #######################################################
 #  📱 MOBILE HACKING LAB - Ultimate Installer v2.0
 #  
@@ -12,11 +11,9 @@
 #  Author: Tech Jarves
 #  YouTube: https://youtube.com/@TechJarves
 #######################################################
-
 # ============== CONFIGURATION ==============
-TOTAL_STEPS=12
+TOTAL_STEPS=13
 CURRENT_STEP=0
-
 # ============== COLORS ==============
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,9 +25,7 @@ WHITE='\033[1;37m'
 GRAY='\033[0;90m'
 NC='\033[0m'
 BOLD='\033[1m'
-
 # ============== PROGRESS FUNCTIONS ==============
-
 # Update overall progress
 update_progress() {
     CURRENT_STEP=$((CURRENT_STEP + 1))
@@ -52,7 +47,6 @@ update_progress() {
     echo -e "${WHITE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 }
-
 # Spinner animation for running tasks
 spinner() {
     local pid=$1
@@ -77,7 +71,6 @@ spinner() {
     
     return $exit_code
 }
-
 # Install package with progress
 install_pkg() {
     local pkg=$1
@@ -86,42 +79,26 @@ install_pkg() {
     (yes | pkg install $pkg -y > /dev/null 2>&1) &
     spinner $! "Installing ${name}..."
 }
-
 # ============== BANNER ==============
-
 show_banner() {
     clear
     echo -e "${CYAN}"
     cat << 'BANNER'
-    
-    ╔═══════════════════════════════════════════════════════════════╗
-    ║                                                               ║
-    ║   ███╗   ███╗ ██████╗ ██████╗ ██╗██╗     ███████╗            ║
-    ║   ████╗ ████║██╔═══██╗██╔══██╗██║██║     ██╔════╝            ║
-    ║   ██╔████╔██║██║   ██║██████╔╝██║██║     █████╗              ║
-    ║   ██║╚██╔╝██║██║   ██║██╔══██╗██║██║     ██╔══╝              ║
-    ║   ██║ ╚═╝ ██║╚██████╔╝██████╔╝██║███████╗███████╗            ║
-    ║   ╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═╝╚══════╝╚══════╝            ║
-    ║                                                               ║
-    ║   ██╗  ██╗ █████╗  ██████╗██╗  ██╗██╗      █████╗ ██████╗    ║
-    ║   ██║  ██║██╔══██╗██╔════╝██║ ██╔╝██║     ██╔══██╗██╔══██╗   ║
-    ║   ███████║███████║██║     █████╔╝ ██║     ███████║██████╔╝   ║
-    ║   ██╔══██║██╔══██║██║     ██╔═██╗ ██║     ██╔══██║██╔══██╗   ║
-    ║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║██████╔╝   ║
-    ║   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═════╝   ║
-    ║                                                               ║
-    ║            🔥 Ultimate Installer v2.0 🔥                      ║
-    ║                                                               ║
-    ╚═══════════════════════════════════════════════════════════════╝
+    ╔══════════════════════════════════════╗
+    ║                                      ║
+    ║   🚀  MOBILE HACKLAB v2.1  🚀        ║
+    ║                                      ║
+    ║       Tech Jarves - YouTube          ║
+    ║                                      ║
+    ╚══════════════════════════════════════╝
+BANNER
     
 BANNER
     echo -e "${NC}"
     echo -e "${WHITE}         Tech Jarves - YouTube${NC}"
     echo ""
 }
-
 # ============== DEVICE DETECTION ==============
-
 detect_device() {
     echo -e "${PURPLE}[*] Detecting your device...${NC}"
     echo ""
@@ -150,9 +127,7 @@ detect_device() {
     echo ""
     sleep 1
 }
-
 # ============== STEP 1: UPDATE SYSTEM ==============
-
 step_update() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Updating system packages...${NC}"
@@ -164,9 +139,7 @@ step_update() {
     (yes | pkg upgrade -y > /dev/null 2>&1) &
     spinner $! "Upgrading installed packages..."
 }
-
 # ============== STEP 2: INSTALL REPOSITORIES ==============
-
 step_repos() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Adding package repositories...${NC}"
@@ -175,9 +148,7 @@ step_repos() {
     install_pkg "x11-repo" "X11 Repository"
     install_pkg "tur-repo" "TUR Repository (Firefox, VS Code)"
 }
-
 # ============== STEP 3: INSTALL TERMUX-X11 ==============
-
 step_x11() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Termux-X11...${NC}"
@@ -186,9 +157,7 @@ step_x11() {
     install_pkg "termux-x11-nightly" "Termux-X11 Display Server"
     install_pkg "xorg-xrandr" "XRandR (Display Settings)"
 }
-
 # ============== STEP 4: INSTALL DESKTOP ==============
-
 step_desktop() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing XFCE4 Desktop...${NC}"
@@ -199,9 +168,7 @@ step_desktop() {
     install_pkg "thunar" "Thunar File Manager"
     install_pkg "mousepad" "Mousepad Text Editor"
 }
-
 # ============== STEP 5: INSTALL GPU DRIVERS ==============
-
 step_gpu() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing GPU Acceleration (Turnip/Zink)...${NC}"
@@ -219,9 +186,7 @@ step_gpu() {
     
     echo -e "  ${GREEN}✓${NC} GPU acceleration configured!"
 }
-
 # ============== STEP 6: INSTALL AUDIO ==============
-
 step_audio() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Audio Support...${NC}"
@@ -229,9 +194,7 @@ step_audio() {
     
     install_pkg "pulseaudio" "PulseAudio Sound Server"
 }
-
 # ============== STEP 7: INSTALL BROWSERS & APPS ==============
-
 step_apps() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Applications...${NC}"
@@ -243,9 +206,7 @@ step_apps() {
     install_pkg "wget" "Wget Downloader"
     install_pkg "curl" "cURL"
 }
-
 # ============== STEP 8: INSTALL NETWORK TOOLS ==============
-
 step_network_tools() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Network Scanning Tools...${NC}"
@@ -257,9 +218,7 @@ step_network_tools() {
     install_pkg "dnsutils" "DNS Utilities"
     install_pkg "tracepath" "Tracepath"
 }
-
 # ============== STEP 9: INSTALL SECURITY TOOLS ==============
-
 step_security_tools() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Security Tools...${NC}"
@@ -274,20 +233,31 @@ step_security_tools() {
     pip install requests beautifulsoup4 > /dev/null 2>&1
     echo -e "  ${GREEN}✓${NC} Python libraries installed"
 }
-
 # ============== STEP 10: INSTALL METASPLOIT ==============
-
-step_metasploit() {
+# ============== STEP 11: INSTALL WINE (WINDOWS APPS) ==============
+step_wine() {
     update_progress
-    echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Metasploit Framework...${NC}"
-    echo -e "${GRAY}  (This may take 5-10 minutes)${NC}"
+    echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Wine (Windows Support)...${NC}"
     echo ""
     
-    install_pkg "metasploit" "Metasploit Framework"
+    # Remove existing wine-stable to avoid conflicts
+    (pkg remove wine-stable -y > /dev/null 2>&1) &
+    spinner $! "Removing old Wine versions..."
+    
+    # Install Hangover
+    install_pkg "hangover-wine" "Wine Compatibility Layer"
+    install_pkg "hangover-wowbox64" "Box64 Wrapper"
+    
+    # Symlink wine binary
+    ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/wine /data/data/com.termux/files/usr/bin/wine
+    ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/winecfg /data/data/com.termux/files/usr/bin/winecfg
+    
+    # Apply registry fix for modern font smoothing
+    echo -e "  ${YELLOW}⏳${NC} Applying Windows UI optimizations..."
+    wine reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v FontSmoothing /t REG_SZ /d 2 /f > /dev/null 2>&1
+    echo -e "  ${GREEN}✓${NC} UI optimized"
 }
-
-# ============== STEP 11: CREATE LAUNCHER SCRIPTS ==============
-
+# ============== STEP 12: CREATE LAUNCHER SCRIPTS ==============
 step_launchers() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Creating Launcher Scripts...${NC}"
@@ -316,34 +286,27 @@ GPUEOF
     # Main Desktop Launcher - FIXED VERSION
     cat > ~/start-hacklab.sh << 'LAUNCHEREOF'
 #!/data/data/com.termux/files/usr/bin/bash
-
 echo ""
 echo "🚀 Starting Mobile HackLab Desktop..."
 echo ""
-
 # Load GPU config
 source ~/.config/hacklab-gpu.sh 2>/dev/null
-
 # Kill any existing sessions
 pkill -9 -f "termux.x11" 2>/dev/null
 pkill -9 -f "pulseaudio" 2>/dev/null
 pkill -9 -f "xfce" 2>/dev/null
 pkill -9 -f "dbus" 2>/dev/null
 sleep 1
-
 # Start PulseAudio for sound
 pulseaudio --start --exit-idle-time=-1 2>/dev/null &
 sleep 1
-
 # Start Termux-X11 server
 echo "📺 Starting X11 display server..."
 termux-x11 :0 -ac &
 sleep 3
-
 # Set display variables
 export DISPLAY=:0
 export PULSE_SERVER=127.0.0.1
-
 # Start XFCE Desktop
 echo "🖥️ Launching XFCE4 Desktop..."
 echo ""
@@ -351,7 +314,6 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  📱 Open the Termux-X11 app to see desktop!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-
 # Use exec to replace shell with xfce4
 exec startxfce4
 LAUNCHEREOF
@@ -361,7 +323,6 @@ LAUNCHEREOF
     # Quick Tools Menu
     cat > ~/hacktools.sh << 'TOOLSEOF'
 #!/data/data/com.termux/files/usr/bin/bash
-
 while true; do
     clear
     echo ""
@@ -428,9 +389,7 @@ STOPEOF
     chmod +x ~/stop-hacklab.sh
     echo -e "  ${GREEN}✓${NC} Created ~/stop-hacklab.sh"
 }
-
-# ============== STEP 12: CREATE DESKTOP SHORTCUTS ==============
-
+# ============== STEP 13: CREATE DESKTOP SHORTCUTS ==============
 step_shortcuts() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Creating Desktop Shortcuts...${NC}"
@@ -493,12 +452,30 @@ Type=Application
 Categories=Security;
 EOF
     
+    # Windows File Explorer
+    cat > ~/Desktop/Windows_Explorer.desktop << 'EOF'
+[Desktop Entry]
+Name=Windows Explorer
+Comment=Windows File Manager
+Exec=wine winefile
+Icon=folder-windows
+Type=Application
+Categories=System;
+EOF
+    # Wine Config
+    cat > ~/Desktop/Wine_Config.desktop << 'EOF'
+[Desktop Entry]
+Name=Wine Config
+Comment=Windows Settings
+Exec=wine winecfg
+Icon=wine
+Type=Application
+Categories=Settings;
+EOF
     chmod +x ~/Desktop/*.desktop 2>/dev/null
     echo -e "  ${GREEN}✓${NC} Desktop shortcuts created"
 }
-
 # ============== COMPLETION ==============
-
 show_completion() {
     echo ""
     echo -e "${GREEN}"
@@ -535,6 +512,7 @@ COMPLETE
     echo -e "   • SQLMap, Hydra, John the Ripper"
     echo -e "   • Metasploit Framework"
     echo -e "   • Firefox, VS Code, Git"
+    echo -e "   • Windows Compatibility (Wine/Hangover)"
     echo -e "   • XFCE4 Desktop + GPU Acceleration"
     echo ""
     echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -545,9 +523,7 @@ COMPLETE
     echo -e "${WHITE}⚡ TIP: Open Termux-X11 app first, then run start-hacklab.sh${NC}"
     echo ""
 }
-
 # ============== MAIN INSTALLATION ==============
-
 main() {
     show_banner
     
@@ -571,12 +547,12 @@ main() {
     step_network_tools
     step_security_tools
     step_metasploit
+    step_wine
     step_launchers
     step_shortcuts
     
     # Show completion
     show_completion
 }
-
 # ============== RUN ==============
 main
