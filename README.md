@@ -63,7 +63,7 @@ Unlike other guides that use **slow software rendering**, this installer sets up
 - Vulkan Loader
 ---
 ## 🎬 Video Tutorial
-[![Watch on YouTube](https://img.shields.io/badge/Watch%20Full%20Tutorial-YouTube-red?style=for-the-badge&logo=youtube)](https://youtube.com/@TechJarves)
+[![Watch on YouTube](https://img.shields.io/badge/Watch%20Full%20Tutorial-YouTube-red?style=for-the-badge&logo=youtube)]([https://youtube.com/@TechJarves](https://youtu.be/4do18nhKc2k))
 **Step-by-step guide on my YouTube channel!**
 ---
 ## 📸 Installation Preview
@@ -136,3 +136,4 @@ If this helped you, please give it a **star** ⭐ - it helps others find this pr
   <br><br>
   Made with ❤️ by <b>Tech Jarves</b>
 </p>
+
