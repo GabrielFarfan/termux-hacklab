@@ -359,16 +359,20 @@ DEBGUIEOF
 
     # Configure sshd inside Debian (port 2222, allow root login)
     echo -e "  ${YELLOW}⏳${NC} Configuring SSH server in Debian..."
-    proot-distro login debian -- bash -c '
+    DEBIAN_ROOT_PASS=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)
+    proot-distro login debian -- bash -c "
         mkdir -p /run/sshd
-        sed -i "s/^#Port 22/Port 2222/" /etc/ssh/sshd_config
-        sed -i "s/^#PermitRootLogin.*/PermitRootLogin yes/" /etc/ssh/sshd_config
-        sed -i "s/^#PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config
-        echo "ListenAddress 127.0.0.1" >> /etc/ssh/sshd_config
-        echo "root:REDACTED" | chpasswd
+        sed -i 's/^#Port 22/Port 2222/' /etc/ssh/sshd_config
+        sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+        sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        echo 'ListenAddress 127.0.0.1' >> /etc/ssh/sshd_config
+        echo \"root:${DEBIAN_ROOT_PASS}\" | chpasswd
         ssh-keygen -A
-    ' > /dev/null 2>&1
-    echo -e "  ${GREEN}✓${NC} SSH configured (port 2222, user: root, pass: REDACTED)"
+    " > /dev/null 2>&1
+    echo "${DEBIAN_ROOT_PASS}" > ~/.debian_ssh_password
+    chmod 600 ~/.debian_ssh_password
+    echo -e "  ${GREEN}✓${NC} SSH configured (port 2222, user: root)"
+    echo -e "  ${GREEN}✓${NC} Password saved to ~/.debian_ssh_password"
 
     # Create Debian sshd background service script
     cat > ~/debian-sshd.sh << 'SSHDEOF'
@@ -385,7 +389,11 @@ case "${1:-start}" in
         if pgrep -f "proot.*debian.*sshd" > /dev/null 2>&1; then
             echo "✅ Debian sshd running. Connect with:"
             echo "   ssh root@localhost -p 2222"
-            echo "   Password: REDACTED"
+            if [ -f ~/.debian_ssh_password ]; then
+                echo "   Password: $(cat ~/.debian_ssh_password)"
+            else
+                echo "   (password file missing — re-run install or reset with chpasswd in Debian)"
+            fi
         else
             echo "❌ Failed to start sshd."
         fi
