@@ -92,10 +92,7 @@ show_banner() {
     ║                                      ║
     ╚══════════════════════════════════════╝
 BANNER
-    
-BANNER
     echo -e "${NC}"
-    echo -e "${WHITE}         Tech Jarves - YouTube${NC}"
     echo ""
 }
 # ============== DEVICE DETECTION ==============
@@ -146,7 +143,7 @@ step_repos() {
     echo ""
     
     install_pkg "x11-repo" "X11 Repository"
-    install_pkg "tur-repo" "TUR Repository (Firefox, VS Code)"
+    install_pkg "tur-repo" "TUR Repository (Firefox)"
 }
 # ============== STEP 3: INSTALL TERMUX-X11 ==============
 step_x11() {
@@ -166,7 +163,6 @@ step_desktop() {
     install_pkg "xfce4" "XFCE4 Desktop Environment"
     install_pkg "xfce4-terminal" "XFCE4 Terminal"
     install_pkg "thunar" "Thunar File Manager"
-    install_pkg "mousepad" "Mousepad Text Editor"
 }
 # ============== STEP 5: INSTALL GPU DRIVERS ==============
 step_gpu() {
@@ -199,9 +195,8 @@ step_apps() {
     update_progress
     echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Applications...${NC}"
     echo ""
-    
+
     install_pkg "firefox" "Firefox Browser"
-    install_pkg "code-oss" "VS Code Editor"
     install_pkg "git" "Git Version Control"
     install_pkg "wget" "Wget Downloader"
     install_pkg "curl" "cURL"
@@ -233,29 +228,201 @@ step_security_tools() {
     pip install requests beautifulsoup4 > /dev/null 2>&1
     echo -e "  ${GREEN}✓${NC} Python libraries installed"
 }
-# ============== STEP 10: INSTALL METASPLOIT ==============
-# ============== STEP 11: INSTALL WINE (WINDOWS APPS) ==============
-step_wine() {
+# ============== STEP 10: INSTALL DEBIAN + METASPLOIT ==============
+step_debian_proot() {
     update_progress
-    echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Wine (Windows Support)...${NC}"
+    echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Debian via proot-distro + Metasploit...${NC}"
     echo ""
-    
-    # Remove existing wine-stable to avoid conflicts
-    (pkg remove wine-stable -y > /dev/null 2>&1) &
-    spinner $! "Removing old Wine versions..."
-    
-    # Install Hangover
-    install_pkg "hangover-wine" "Wine Compatibility Layer"
-    install_pkg "hangover-wowbox64" "Box64 Wrapper"
-    
-    # Symlink wine binary
-    ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/wine /data/data/com.termux/files/usr/bin/wine
-    ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/winecfg /data/data/com.termux/files/usr/bin/winecfg
-    
-    # Apply registry fix for modern font smoothing
-    echo -e "  ${YELLOW}⏳${NC} Applying Windows UI optimizations..."
-    wine reg add "HKEY_CURRENT_USER\Control Panel\Desktop" /v FontSmoothing /t REG_SZ /d 2 /f > /dev/null 2>&1
-    echo -e "  ${GREEN}✓${NC} UI optimized"
+
+    # Install proot-distro
+    install_pkg "proot-distro" "PRoot Distro"
+
+    # Install Debian rootfs
+    echo -e "  ${YELLOW}⏳${NC} Installing Debian rootfs (this may take a while)..."
+    (proot-distro install debian > /dev/null 2>&1) &
+    spinner $! "Downloading and extracting Debian..."
+
+    # Bootstrap Debian with core packages
+    echo -e "  ${YELLOW}⏳${NC} Setting up Debian environment..."
+    (proot-distro login debian -- bash -c "apt update -y && apt upgrade -y && apt install -y sudo curl wget git vim nano net-tools nmap python3 python3-pip build-essential locales openssh-server" > /dev/null 2>&1) &
+    spinner $! "Installing core Debian packages..."
+
+    # Install Metasploit inside Debian
+    echo -e "  ${YELLOW}⏳${NC} Installing Metasploit Framework in Debian..."
+    (proot-distro login debian -- bash -c "curl -fsSL https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb > /tmp/msfinstall && chmod 755 /tmp/msfinstall && /tmp/msfinstall" > /dev/null 2>&1) &
+    spinner $! "Installing Metasploit (this takes a while)..."
+
+    # Install Android SDK inside Debian
+    echo -e "  ${YELLOW}⏳${NC} Setting up Android SDK in Debian..."
+    (proot-distro login debian -- bash -c "apt install -y openjdk-17-jdk unzip" > /dev/null 2>&1) &
+    spinner $! "Installing OpenJDK 17 in Debian..."
+
+    (proot-distro login debian -- bash -c '
+        mkdir -p /opt/android-sdk/cmdline-tools &&
+        cd /tmp &&
+        curl -fsSL -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip &&
+        unzip -qo cmdline-tools.zip &&
+        mv cmdline-tools /opt/android-sdk/cmdline-tools/latest &&
+        rm -f cmdline-tools.zip
+    ' > /dev/null 2>&1) &
+    spinner $! "Downloading Android SDK command-line tools..."
+
+    (proot-distro login debian -- bash -c '
+        export ANDROID_HOME=/opt/android-sdk
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;35.0.0" "platforms;android-35" "platform-tools"
+    ' > /dev/null 2>&1) &
+    spinner $! "Installing Android SDK 35 + build-tools (this takes a while)..."
+
+    # Set up Android SDK environment in Debian
+    proot-distro login debian -- bash -c '
+        cat > /etc/profile.d/android-sdk.sh << "SDKENV"
+export ANDROID_HOME=/opt/android-sdk
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64
+export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/35.0.0:$PATH
+SDKENV
+    ' > /dev/null 2>&1
+    echo -e "  ${GREEN}✓${NC} Android SDK configured in Debian (SDK 35, build-tools 35.0.0)"
+
+    # Install .NET SDK inside Debian
+    echo -e "  ${YELLOW}⏳${NC} Installing .NET SDK in Debian..."
+    (proot-distro login debian -- bash -c '
+        curl -fsSL https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -o /tmp/packages-microsoft-prod.deb &&
+        dpkg -i /tmp/packages-microsoft-prod.deb &&
+        rm -f /tmp/packages-microsoft-prod.deb &&
+        apt update -y &&
+        apt install -y dotnet-sdk-8.0 dotnet-sdk-10.0
+    ' > /dev/null 2>&1) &
+    spinner $! "Installing .NET 8 LTS + .NET 10 SDK..."
+
+    # Add dotnet to Debian profile
+    proot-distro login debian -- bash -c '
+        cat >> /etc/profile.d/android-sdk.sh << "DOTNETENV"
+export DOTNET_ROOT=/usr/share/dotnet
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+DOTNETENV
+    ' > /dev/null 2>&1
+    echo -e "  ${GREEN}✓${NC} .NET 8 + .NET 10 SDK configured in Debian"
+
+    # Create Debian shell launcher
+    cat > ~/start-debian.sh << 'DEBIANEOF'
+#!/data/data/com.termux/files/usr/bin/bash
+echo ""
+echo "🐧 Starting Debian Linux Shell..."
+echo "   Android SDK, Gradle, and Metasploit are available."
+echo "   Type 'exit' to return to Termux."
+echo ""
+proot-distro login debian
+DEBIANEOF
+    chmod +x ~/start-debian.sh
+    echo -e "  ${GREEN}✓${NC} Created ~/start-debian.sh"
+
+    # Create msfconsole wrapper
+    cat > ~/msfconsole.sh << 'MSFEOF'
+#!/data/data/com.termux/files/usr/bin/bash
+echo ""
+echo "💀 Launching Metasploit Framework (inside Debian)..."
+echo ""
+proot-distro login debian -- msfconsole "$@"
+MSFEOF
+    chmod +x ~/msfconsole.sh
+    echo -e "  ${GREEN}✓${NC} Created ~/msfconsole.sh"
+
+    # Create Debian GUI launcher (X11 + Debian shell with display)
+    cat > ~/start-debian-gui.sh << 'DEBGUIEOF'
+#!/data/data/com.termux/files/usr/bin/bash
+echo ""
+echo "🐧 Starting Debian with X11 display..."
+echo ""
+
+# Start X11 server if not already running
+if ! pgrep -f "termux.x11" > /dev/null 2>&1; then
+    echo "📺 Starting X11 display server..."
+    termux-x11 :0 -ac &
+    sleep 3
+else
+    echo "📺 X11 server already running."
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Open Termux-X11 app to see GUI output."
+echo "  Run GUI apps inside Debian normally."
+echo "  Type 'exit' to return to Termux."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+proot-distro login debian --shared-tmp -- env DISPLAY=:0 bash -l
+DEBGUIEOF
+    chmod +x ~/start-debian-gui.sh
+    echo -e "  ${GREEN}✓${NC} Created ~/start-debian-gui.sh"
+
+    # Configure sshd inside Debian (port 2222, allow root login)
+    echo -e "  ${YELLOW}⏳${NC} Configuring SSH server in Debian..."
+    proot-distro login debian -- bash -c '
+        mkdir -p /run/sshd
+        sed -i "s/^#Port 22/Port 2222/" /etc/ssh/sshd_config
+        sed -i "s/^#PermitRootLogin.*/PermitRootLogin yes/" /etc/ssh/sshd_config
+        sed -i "s/^#PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config
+        echo "ListenAddress 127.0.0.1" >> /etc/ssh/sshd_config
+        echo "root:REDACTED" | chpasswd
+        ssh-keygen -A
+    ' > /dev/null 2>&1
+    echo -e "  ${GREEN}✓${NC} SSH configured (port 2222, user: root, pass: REDACTED)"
+
+    # Create Debian sshd background service script
+    cat > ~/debian-sshd.sh << 'SSHDEOF'
+#!/data/data/com.termux/files/usr/bin/bash
+case "${1:-start}" in
+    start)
+        if pgrep -f "proot.*debian.*sshd" > /dev/null 2>&1; then
+            echo "🐧 Debian sshd is already running."
+            exit 0
+        fi
+        echo "🐧 Starting Debian sshd on port 2222..."
+        nohup proot-distro login debian -- /usr/sbin/sshd -D -p 2222 > /dev/null 2>&1 &
+        sleep 2
+        if pgrep -f "proot.*debian.*sshd" > /dev/null 2>&1; then
+            echo "✅ Debian sshd running. Connect with:"
+            echo "   ssh root@localhost -p 2222"
+            echo "   Password: REDACTED"
+        else
+            echo "❌ Failed to start sshd."
+        fi
+        ;;
+    stop)
+        echo "🛑 Stopping Debian sshd..."
+        pkill -f "proot.*debian.*sshd" 2>/dev/null
+        echo "✅ Stopped."
+        ;;
+    status)
+        if pgrep -f "proot.*debian.*sshd" > /dev/null 2>&1; then
+            echo "🐧 Debian sshd is running on port 2222."
+        else
+            echo "🐧 Debian sshd is not running."
+        fi
+        ;;
+    *)
+        echo "Usage: bash ~/debian-sshd.sh [start|stop|status]"
+        ;;
+esac
+SSHDEOF
+    chmod +x ~/debian-sshd.sh
+    echo -e "  ${GREEN}✓${NC} Created ~/debian-sshd.sh (start|stop|status)"
+}
+# ============== STEP 11: INSTALL ANDROID DEV TOOLS ==============
+step_android_dev() {
+    update_progress
+    echo -e "${PURPLE}[Step ${CURRENT_STEP}/${TOTAL_STEPS}] Installing Android Development Tools...${NC}"
+    echo ""
+
+    install_pkg "openjdk-17" "Java Development Kit 17"
+    install_pkg "aapt2" "AAPT2 (Android Asset Packaging)"
+    install_pkg "apksigner" "APK Signer"
+    install_pkg "d8" "D8 Dex Compiler"
+    install_pkg "android-tools" "ADB & Fastboot"
+
+    echo -e "  ${GREEN}✓${NC} Android dev toolchain ready (javac, aapt2, d8, apksigner, adb)"
 }
 # ============== STEP 12: CREATE LAUNCHER SCRIPTS ==============
 step_launchers() {
@@ -338,8 +505,12 @@ while true; do
     echo "║  2) 💉 SQLMap - SQL Injection             ║"
     echo "║  3) 🔑 Hydra - Password Attack            ║"
     echo "║  4) 💀 Metasploit Console                 ║"
-    echo "║  5) 🖥️  Start Desktop                     ║"
-    echo "║  6) 🔍 Check GPU Status                   ║"
+    echo "║  5) 🐧 Debian Shell                       ║"
+    echo "║  6) 🐧 Debian GUI (X11)                   ║"
+    echo "║  7) 🔌 Debian SSH Service                  ║"
+    echo "║  8) 📱 Android Dev Tools                  ║"
+    echo "║  9) 🖥️  Start Desktop                     ║"
+    echo "║ 10) 🔍 Check GPU Status                   ║"
     echo "║  0) ❌ Exit                               ║"
     echo "╚═══════════════════════════════════════════╝"
     echo ""
@@ -360,19 +531,58 @@ while true; do
             echo "  Example: hydra -l admin -P wordlist.txt 192.168.1.1 ssh"
             read -p "Press Enter to continue..."
             ;;
-        4) 
-            msfconsole
+        4)
+            bash ~/msfconsole.sh
             ;;
-        5) 
-            bash ~/start-hacklab.sh
+        5)
+            bash ~/start-debian.sh
             ;;
         6)
+            bash ~/start-debian-gui.sh
+            ;;
+        7)
+            echo ""
+            echo "  Debian SSH Service:"
+            echo "  ───────────────────"
+            bash ~/debian-sshd.sh status
+            echo ""
+            echo "  1) Start   2) Stop   3) Back"
+            read -p "  Choose: " sshchoice
+            case $sshchoice in
+                1) bash ~/debian-sshd.sh start ;;
+                2) bash ~/debian-sshd.sh stop ;;
+            esac
+            read -p "Press Enter to continue..."
+            ;;
+        8)
+            echo ""
+            echo "  Android Dev Tools:"
+            echo "  ─────────────────"
+            echo ""
+            echo "  Termux (quick builds):"
+            echo "    javac, aapt2, d8, apksigner, adb, fastboot"
+            echo ""
+            echo "  Debian (full Gradle projects):"
+            echo "    bash ~/start-debian.sh"
+            echo "    cd /path/to/project && ./gradlew assembleDebug"
+            echo ""
+            echo "  SDK location (in Debian): /opt/android-sdk"
+            echo "  Java (in Debian):         openjdk-17"
+            echo "  Platforms:                 android-35"
+            echo "  Build tools:              35.0.0"
+            echo ""
+            read -p "Press Enter to continue..."
+            ;;
+        9)
+            bash ~/start-hacklab.sh
+            ;;
+        10)
             echo ""
             glxinfo | grep "renderer"
             echo ""
             read -p "Press Enter to continue..."
             ;;
-        0) 
+        0)
             exit 0
             ;;
     esac
@@ -413,17 +623,6 @@ Type=Application
 Categories=Network;WebBrowser;
 EOF
     
-    # VS Code
-    cat > ~/Desktop/VSCode.desktop << 'EOF'
-[Desktop Entry]
-Name=VS Code
-Comment=Code Editor
-Exec=code-oss --no-sandbox
-Icon=code-oss
-Type=Application
-Categories=Development;
-EOF
-    
     # Terminal
     cat > ~/Desktop/Terminal.desktop << 'EOF'
 [Desktop Entry]
@@ -440,12 +639,34 @@ EOF
 [Desktop Entry]
 Name=Metasploit
 Comment=Exploitation Framework
-Exec=xfce4-terminal -e msfconsole
+Exec=xfce4-terminal -e "bash ~/msfconsole.sh"
 Icon=utilities-terminal
 Type=Application
 Categories=Security;
 EOF
-    
+
+    # Debian Terminal
+    cat > ~/Desktop/Debian_Terminal.desktop << 'EOF'
+[Desktop Entry]
+Name=Debian Terminal
+Comment=Debian Linux Shell (proot)
+Exec=xfce4-terminal -e "bash ~/start-debian.sh"
+Icon=utilities-terminal
+Type=Application
+Categories=System;TerminalEmulator;
+EOF
+
+    # Debian GUI
+    cat > ~/Desktop/Debian_GUI.desktop << 'EOF'
+[Desktop Entry]
+Name=Debian GUI
+Comment=Debian Shell with X11 Display
+Exec=xfce4-terminal -e "bash ~/start-debian-gui.sh"
+Icon=utilities-terminal
+Type=Application
+Categories=System;TerminalEmulator;
+EOF
+
     # HackTools Menu
     cat > ~/Desktop/HackTools.desktop << 'EOF'
 [Desktop Entry]
@@ -457,26 +678,6 @@ Type=Application
 Categories=Security;
 EOF
     
-    # Windows File Explorer
-    cat > ~/Desktop/Windows_Explorer.desktop << 'EOF'
-[Desktop Entry]
-Name=Windows Explorer
-Comment=Windows File Manager
-Exec=wine winefile
-Icon=folder-windows
-Type=Application
-Categories=System;
-EOF
-    # Wine Config
-    cat > ~/Desktop/Wine_Config.desktop << 'EOF'
-[Desktop Entry]
-Name=Wine Config
-Comment=Windows Settings
-Exec=wine winecfg
-Icon=wine
-Type=Application
-Categories=Settings;
-EOF
     chmod +x ~/Desktop/*.desktop 2>/dev/null
     echo -e "  ${GREEN}✓${NC} Desktop shortcuts created"
 }
@@ -507,6 +708,20 @@ COMPLETE
     echo -e "${WHITE}🔧 FOR QUICK TOOLS MENU:${NC}"
     echo -e "   ${GREEN}bash ~/hacktools.sh${NC}"
     echo ""
+    echo -e "${WHITE}🐧 DEBIAN SHELL (no GUI):${NC}"
+    echo -e "   ${GREEN}bash ~/start-debian.sh${NC}"
+    echo ""
+    echo -e "${WHITE}🐧 DEBIAN WITH X11 (for GUI apps):${NC}"
+    echo -e "   ${GREEN}bash ~/start-debian-gui.sh${NC}"
+    echo ""
+    echo -e "${WHITE}🔌 DEBIAN SSH SERVICE:${NC}"
+    echo -e "   ${GREEN}bash ~/debian-sshd.sh start${NC}   (start background sshd)"
+    echo -e "   ${GREEN}ssh root@localhost -p 2222${NC}    (connect, pass: REDACTED)"
+    echo -e "   ${GREEN}bash ~/debian-sshd.sh stop${NC}    (stop sshd)"
+    echo ""
+    echo -e "${WHITE}💀 TO LAUNCH METASPLOIT:${NC}"
+    echo -e "   ${GREEN}bash ~/msfconsole.sh${NC}"
+    echo ""
     echo -e "${WHITE}🛑 TO STOP THE DESKTOP:${NC}"
     echo -e "   ${GREEN}bash ~/stop-hacklab.sh${NC}"
     echo ""
@@ -515,9 +730,12 @@ COMPLETE
     echo -e "${CYAN}📦 INSTALLED TOOLS:${NC}"
     echo -e "   • Nmap, Netcat, DNS tools"
     echo -e "   • SQLMap, Hydra, John the Ripper"
-    echo -e "   • Metasploit Framework"
-    echo -e "   • Firefox, VS Code, Git"
-    echo -e "   • Windows Compatibility (Wine/Hangover)"
+    echo -e "   • Metasploit Framework (in Debian)"
+    echo -e "   • Debian Linux (via proot-distro)"
+    echo -e "   • Android SDK 35 + Gradle support (in Debian)"
+    echo -e "   • .NET 8 LTS + .NET 10 SDK (in Debian)"
+    echo -e "   • Android Dev Tools (javac, aapt2, d8, apksigner, adb)"
+    echo -e "   • Firefox, Git"
     echo -e "   • XFCE4 Desktop + GPU Acceleration"
     echo ""
     echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -551,8 +769,8 @@ main() {
     step_apps
     step_network_tools
     step_security_tools
-    step_metasploit
-    step_wine
+    step_debian_proot
+    step_android_dev
     step_launchers
     step_shortcuts
     
